@@ -19,6 +19,9 @@ private:
 // generate a texture with random color lines
 static void generateTexture(unsigned int width, unsigned int height, unsigned char* data)
 {
+    // memset(data, 250, width * height * 4);
+    // return;
+
     uint32_t* d = reinterpret_cast<uint32_t*>(data);
 
     const unsigned char colors[6][4] = { { 255, 0,   0,   255 },
@@ -43,6 +46,30 @@ static void generateTexture(unsigned int width, unsigned int height, unsigned ch
     }
 }
 
+static void blit(GLuint texture, unsigned int x, unsigned int y, unsigned int width, unsigned int height,
+                 const std::shared_ptr<BlitShader>& shader)
+{
+    GL_CHECK;
+    Shader::Scope<BlitShader> scope(shader);
+
+    const GLuint pos = shader->variable(BlitShader::Position);
+    const GLuint tex = shader->variable(BlitShader::TexCoord);
+
+    glEnableVertexAttribArray(pos);
+    glEnableVertexAttribArray(tex);
+
+    shader->bindVertexBuffer();
+    glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+
+    shader->bindTextureBuffer();
+    glVertexAttribPointer(tex, 2, GL_UNSIGNED_BYTE, GL_FALSE, 2 * sizeof(GLubyte), 0);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    GL_CHECK;
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+    GL_CHECK;
+}
+
 static void gl(NSOpenGLContext* ctx)
 {
     // initialize GL
@@ -60,38 +87,90 @@ static void gl(NSOpenGLContext* ctx)
     [ctx flushBuffer];
 
     // create a texture
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    GLuint tex[2];
+    glGenTextures(2, tex);
     GL_CHECK;
+
+    std::shared_ptr<BlitShader> blitShader;
+    {
+        const GLchar* vertex[] = {
+            "attribute vec4 a_position;\n"
+            "attribute vec2 a_texCoord;\n"
+            "varying vec2   v_texCoord;\n"
+            "void main()\n"
+            "{\n"
+            "  gl_Position = a_position;\n"
+            "  v_texCoord.x = a_texCoord.x;\n"
+            "  v_texCoord.y = a_texCoord.y;\n"
+            "}\n"
+        };
+
+        const GLchar* fragment[] = {
+            "#ifdef GL_ES\n"
+            "precision highp float;\n"
+            "#endif\n"
+            "varying vec2      v_texCoord;\n"
+            "uniform sampler2D s_texture;\n"
+            "void main()\n"
+            "{\n"
+            "  gl_FragColor = texture2D(s_texture, v_texCoord);\n"
+            "}\n"
+        };
+
+        blitShader = std::make_shared<BlitShader>(vertex, fragment);
+        blitShader->use();
+        blitShader->defineAttribute(BlitShader::Position, "a_position");
+        blitShader->defineAttribute(BlitShader::TexCoord, "a_texCoord");
+
+        glUniform1i(glGetUniformLocation(blitShader->program(), "s_texture"), 0);
+    }
 
     enum { TexWidth = 1280, TexHeight = 720 };
 
     {
         unsigned char* c = new unsigned char[TexWidth * TexHeight * 4];
-        generateTexture(TexWidth, TexHeight, c);
 
         // initialize texture data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1280, 720, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
+        generateTexture(TexWidth, TexHeight, c);
+        glBindTexture(GL_TEXTURE_2D, tex[0]);
+        GL_CHECK;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TexWidth, TexHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
+        GL_CHECK;
+
+        //generateTexture(TexWidth, TexHeight, c);
+        glBindTexture(GL_TEXTURE_2D, tex[1]);
+        GL_CHECK;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TexWidth, TexHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
         GL_CHECK;
 
         delete[] c;
     }
 
-    glClearColor(0, 1, 0, 1);
+    glClearColor(0, 1, 1, 1);
     // create a ton of FBOs
     unsigned int cnt = 0;
     for (;;) {
         {
-            FBO fbo(tex, 1280, 720);
+            FBO fbo(tex[0], 1280, 720);
             fprintf(stderr, "created fbo 0x%x (%u) on texture 0x%x -> %s\n",
-                    fbo.fbo(), ++cnt, tex, (fbo.isValid() ? "valid" : "invalid"));
+                    fbo.fbo(), ++cnt, tex[0], (fbo.isValid() ? "valid" : "invalid"));
             // clear the FBO
             glClear(GL_COLOR_BUFFER_BIT);
 
-            // draw onto the fbo
-
+            // blit to the fbo
+            blit(tex[1], 0, 0, TexWidth, TexHeight, blitShader);
         }
+
+        // blit to the screen
+        blit(tex[0], 0, 0, TexWidth, TexHeight, blitShader);
 
         // flush the screen
         [ctx flushBuffer];

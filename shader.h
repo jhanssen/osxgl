@@ -124,4 +124,73 @@ inline GLuint Shader::takeProgram()
     return prog;
 }
 
+class RectShader : public Shader
+{
+public:
+    template<int VertexCount, int FragmentCount>
+    RectShader(const GLchar* (&vertex)[VertexCount], const GLchar* (&fragment)[FragmentCount])
+        : Shader(vertex, fragment)
+    {
+        glGenBuffers(2, mVertexBuffer);
+        GLfloat vertices[12] = {
+            -1.0,  1.0, 0.0,
+            -1.0, -1.0, 0.0,
+            1.0, -1.0, 0.0,
+            1.0,  1.0, 0.0,
+        };
+        glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer[0]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        GLubyte indices[6] = {0, 1, 2, 0, 2, 3};
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mVertexBuffer[1]);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    }
+
+    void bindVertexBuffer()
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer[0]);
+    }
+
+    void prepare()
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mVertexBuffer[1]);
+    }
+
+    void clear()
+    {
+    }
+
+protected:
+    GLuint mVertexBuffer[2];
+};
+
+class BlitShader : public RectShader
+{
+public:
+    enum { Position, TexCoord };
+
+    template<int VertexCount, int FragmentCount>
+    BlitShader(const GLchar* (&vertex)[VertexCount], const GLchar* (&fragment)[FragmentCount])
+        : RectShader(vertex, fragment)
+    {
+        glGenBuffers(1, &mTextureCoordBuffer);
+        GLubyte textureCoordinates[8] = {
+            0, 0,
+            0, 1,
+            1, 1,
+            1, 0
+        };
+        glBindBuffer(GL_ARRAY_BUFFER, mTextureCoordBuffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(textureCoordinates), textureCoordinates, GL_STATIC_DRAW);
+    }
+
+    void bindTextureBuffer()
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, mTextureCoordBuffer);
+    }
+
+private:
+    GLuint mTextureCoordBuffer;
+};
+
 #endif
