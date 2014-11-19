@@ -24,20 +24,32 @@ static void generateTexture(unsigned int width, unsigned int height, unsigned ch
 
     uint32_t* d = reinterpret_cast<uint32_t*>(data);
 
-    const unsigned char colors[6][4] = { { 255, 0,   0,   255 },
-                                         { 0,   255, 0,   255 },
-                                         { 0,   0,   255, 255 },
-                                         { 0,   255, 255, 255 },
-                                         { 255, 255, 0,   255 },
-                                         { 255, 0,   255, 255 } };
+    const unsigned char colors[18][4] = { { 255, 80,  80,  255 },
+                                          { 255, 80,  80,  255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 80,  80,  255, 255 },
+                                          { 80,  80,  255, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 80,  255, 80,  255 },
+                                          { 80,  255, 80,  255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 },
+                                          { 128, 128, 128, 255 } };
 
     int color = 0;
     for (int y = 0; y < height; ++y) {
-        if (color >= 6)
+        if (color >= 18)
             color = 0;
 
-        const uint32_t col = (colors[color][0] << 24) | (colors[color][1] << 16) |
-                             (colors[color][2] << 8)  | (colors[color][3]);
+        const uint32_t col = (colors[color][3] << 24) | (colors[color][2] << 16) |
+                             (colors[color][1] << 8)  | (colors[color][0]);
         for (int x = 0; x < width; ++x) {
             (*d++) = col;
         }
