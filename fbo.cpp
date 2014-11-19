@@ -78,6 +78,7 @@ void FBO::init(GLuint tex)
     GL_CHECK;
     GLenum status;
     for (size_t idx = 0; idx < sizeof(tryFlags) / sizeof(tryFlags[0]); ++idx) {
+        std::cerr << "FBO generate attempt " << (idx + 1) << std::endl;
         status = generate(tex, mWidth, mHeight, tryFlags[idx]);
         if (status == GL_FRAMEBUFFER_COMPLETE)
             break;

@@ -1,6 +1,9 @@
 #import <Cocoa/Cocoa.h>
 #import <Carbon/Carbon.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "common.h"
+#include "fbo.h"
 
 class ScopedPool
 {
@@ -37,6 +40,23 @@ static void gl(NSOpenGLContext* ctx)
     // initialize texture data
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1280, 720, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     GL_CHECK;
+
+    glClearColor(0, 1, 0, 1);
+    // create a ton of FBOs
+    unsigned int cnt = 0;
+    for (;;) {
+        {
+            FBO fbo(tex, 1280, 720);
+            fprintf(stderr, "created fbo 0x%x (%u) on texture 0x%x -> %s\n",
+                    fbo.fbo(), ++cnt, tex, (fbo.isValid() ? "valid" : "invalid"));
+            // clear the FBO
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
+
+        // flush the screen
+        [ctx flushBuffer];
+        usleep(100000);
+    }
 }
 
 int main(int argc, char **argv)
