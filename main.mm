@@ -80,6 +80,7 @@ static void gl(NSOpenGLContext* ctx)
     glClearColor(1, 0, 0, 1);
     glActiveTexture(GL_TEXTURE0);
     glDisable(GL_DEPTH_TEST);
+
     GL_CHECK;
 
     // clear and flush
@@ -159,7 +160,7 @@ static void gl(NSOpenGLContext* ctx)
     unsigned int cnt = 0;
     for (;;) {
         {
-            FBO fbo(tex[0], 1280, 720);
+            FBO fbo(tex[0], TexWidth, TexHeight);
             fprintf(stderr, "created fbo 0x%x (%u) on texture 0x%x -> %s\n",
                     fbo.fbo(), ++cnt, tex[0], (fbo.isValid() ? "valid" : "invalid"));
             // clear the FBO
