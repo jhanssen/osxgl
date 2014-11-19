@@ -22,7 +22,6 @@ GLenum FBO::generate(GLuint tex, unsigned int width, unsigned int height, unsign
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
 
-#ifdef GL_DEPTH_STENCIL
     if (flags & DepthStencil) {
         mRb.resize(1);
         glGenRenderbuffers(mRb.size(), &mRb[0]);
@@ -31,9 +30,7 @@ GLenum FBO::generate(GLuint tex, unsigned int width, unsigned int height, unsign
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRb[0]);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mRb[0]);
-    } else
-#endif
-    {
+    } else {
         if (flags & Depth) {
             assert(mRb.empty());
             mRb.resize(1);
@@ -71,9 +68,7 @@ GLenum FBO::generate(GLuint tex, unsigned int width, unsigned int height, unsign
 void FBO::init(GLuint tex)
 {
     static unsigned int tryFlags[] = {
-#ifdef GL_DEPTH_STENCIL
         DepthStencil,
-#endif
         Depth | Stencil,
         Depth,
         Stencil,
