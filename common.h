@@ -3,13 +3,14 @@
 
 #include <OpenGL/gl.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 
 inline void _glcheck(const char* function, const char* file, int line)
 {
     const GLenum e = glGetError();
     if (e != GL_NO_ERROR) {
-        fprintf(stderr, ">> GL ERROR 0x%x @ %s - %s:%d", e, function, file, line);
+        fprintf(stderr, ">> GL ERROR 0x%x @ %s - %s:%d\n", e, function, file, line);
         abort();
     }
 }
